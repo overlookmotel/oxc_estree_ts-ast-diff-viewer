@@ -1,0 +1,172 @@
+import { Glob } from "bun";
+import { mkdir, rm } from "node:fs/promises";
+import { resolve } from "node:path";
+import sortObject from "sort-keys";
+import { diffLines } from "diff";
+import { parse } from "@typescript-eslint/parser";
+import { parseSync } from "../oxc/napi/parser/index.js";
+
+const stats = {};
+const glob = new Glob("**/*.ts");
+for (const cwd of [
+  resolve("../oxc/tasks/coverage/typescript/tests/cases/compiler"),
+  resolve("../oxc/tasks/coverage/typescript/tests/cases/conformance"),
+]) {
+  const category = cwd.split("/").pop();
+
+  await rm(["./generated", category].join("/"), { recursive: true, force: true });
+  await mkdir(["./generated", category].join("/"), { recursive: true });
+
+  const time = performance.now();
+  const counter = {
+    ignored: 0,
+    failed: 0,
+    matched: 0,
+    created: 0,
+  };
+  const index = [];
+  for await (const absPath of glob.scan({ cwd, absolute: true })) {
+    // DEBUG
+    // if (100 < counter.created) break;
+
+    const path = absPath.split(cwd).pop().slice(1).replace(/\//g, ".");
+    const id = [category, path].join("/");
+
+    // DEBUG: These files are extremely slow(+1min~ for each) to diff...
+    if (
+      [
+        "compiler/manyConstExports.ts",
+        "compiler/largeControlFlowGraph.ts",
+        "compiler/conditionalTypeDiscriminatingLargeUnionRegularTypeFetchingSpeedReasonable.ts",
+        "compiler/resolvingClassDeclarationWhenInBaseTypeResolution.ts",
+        "compiler/unionSubtypeReductionErrors.ts",
+        "compiler/enumLiteralsSubtypeReduction.ts",
+        "compiler/complexRecursiveCollections.ts",
+        "compiler/underscoreTest1.ts",
+      ].includes(id)
+    ) {
+      counter.ignored++;
+      continue;
+    }
+
+    const sourceText = await Bun.file(absPath).text();
+
+    const results = {
+      theirs: null,
+      ours: null,
+    };
+
+    try {
+      results.theirs = parseTheirs(sourceText);
+    } catch {
+      // There are some files that fail to parse
+      // - Invalid syntax
+      // - etc...
+      // console.log(path);
+      counter.failed++;
+      continue;
+    }
+
+    try {
+      results.ours = parseOurs(sourceText);
+    } catch {
+      console.error("OXC failed to parse", path);
+      counter.failed++;
+      continue;
+    }
+
+    // Match!
+    if (results.ours === results.theirs) {
+      counter.matched++;
+      continue;
+    }
+
+    console.log("Diffing", id);
+    console.time();
+
+    const changes = diffLines(results.ours, results.theirs);
+
+    const diff = [0, 0];
+    for (const change of changes) {
+      if (change.added) diff[0] += change.count ?? 0;
+      if (change.removed) diff[1] += change.count ?? 0;
+    }
+
+    index.push([id, diff[0], diff[1]].join("|"));
+
+    const dest = ["./generated", id].join("/");
+    await mkdir(dest, { recursive: true });
+    await Promise.all([
+      Bun.write(`${dest}/source.ts`, sourceText),
+      Bun.write(`${dest}/ours.json`, results.ours),
+      Bun.write(`${dest}/theirs.json`, results.theirs),
+      Bun.write(`${dest}/diff.json`, JSON.stringify(changes)),
+    ]);
+
+    counter.created++;
+    console.timeEnd();
+  }
+
+  index.sort((a, b) => a.localeCompare(b));
+  await Bun.write(`./generated/${category}/index.txt`, index.join("\n"));
+
+  stats[category] = {
+    ...counter,
+    time: ((performance.now() - time) / 1000).toFixed(2) + " sec",
+  };
+}
+
+console.log("✅", `files created in ./generated/(${Object.keys(stats).join("|")})/`);
+console.table(stats);
+
+// ---
+
+function parseTheirs(code) {
+  const ast = parse(code, {
+    sourceType: "module",
+    tokens: false,
+    range: false,
+    comments: false,
+  });
+  delete ast.tokens;
+  delete ast.comments;
+
+  const json = JSON.stringify(
+    ast,
+    (_key, value) => {
+      if (typeof value !== "object" || value === null || !Object.hasOwn(value, "type"))
+        return value;
+
+      // Remove `loc` field
+      if (Object.hasOwn(value, "loc")) value.loc = undefined;
+
+      // Convert `range` field to `start` + `end`
+      if (Object.hasOwn(value, "range")) {
+        value = {
+          type: value.type,
+          start: value.range[0],
+          end: value.range[1],
+          ...value,
+          range: undefined,
+        };
+      }
+
+      return sortObject(value);
+    },
+    2,
+  );
+
+  return json;
+}
+
+function parseOurs(code) {
+  const ast = parseSync("foo.ts", code, {
+    preserveParens: false,
+  });
+  // TODO: For theirs, this is comment w/ `type: Shebang`
+  delete ast.program.hashbang;
+
+  const json = JSON.stringify(sortObject(ast.program, { deep: true }), null, 2);
+
+  return json;
+}
