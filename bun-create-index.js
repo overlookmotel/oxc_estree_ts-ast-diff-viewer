@@ -20,7 +20,8 @@ for (const cwd of [
   const time = performance.now();
   const counter = {
     ignored: 0,
-    failed: 0,
+    theirsFailed: 0,
+    oursFailed: 0,
     matched: 0,
     created: 0,
   };
@@ -63,15 +64,14 @@ for (const cwd of [
       // - Invalid syntax
       // - etc...
       // console.log(path);
-      counter.failed++;
+      counter.theirsFailed++;
       continue;
     }
 
     try {
       results.ours = parseOurs(sourceText);
     } catch {
-      console.error("OXC failed to parse", path);
-      counter.failed++;
+      counter.oursFailed++;
       continue;
     }
 
@@ -160,13 +160,16 @@ function parseTheirs(code) {
 }
 
 function parseOurs(code) {
-  const ast = parseSync("foo.ts", code, {
+  const ret = parseSync("foo.ts", code, {
     preserveParens: false,
   });
-  // TODO: For theirs, this is comment w/ `type: Shebang`
-  delete ast.program.hashbang;
 
-  const json = JSON.stringify(sortObject(ast.program, { deep: true }), null, 2);
+  if (ret.errors.length !== 0) throw new Error("OXC failed to parse");
+
+  // TODO: For theirs, this is comment w/ `type: Shebang`
+  delete ret.program.hashbang;
+
+  const json = JSON.stringify(sortObject(ret.program, { deep: true }), null, 2);
 
   return json;
 }
