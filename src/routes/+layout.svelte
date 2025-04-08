@@ -1,5 +1,6 @@
 <script>
   import { toViewId } from "$lib/utils.js";
+  import { page } from "$app/state";
   /** @typedef {import("./+layout.server.js").Index} Index */
 
   /** @type {import('./$types').LayoutProps} */
@@ -11,7 +12,9 @@
   let conformanceIndex = $state(data.conformanceIndex);
 
   let category = $state("compiler");
-  let activeIndex = $derived(category === "compiler" ? compilerIndex : conformanceIndex);
+  let activeIndex = $derived(
+    category === "compiler" ? compilerIndex : conformanceIndex,
+  );
 
   /** @param {string} newCategory */
   const setCategory = (newCategory) => (category = newCategory);
@@ -60,7 +63,11 @@
             <span class="-a">+{added}</span>
             <span class="-r">-{removed}</span>
           </div>
-          <a href="/{id}">{viewId}</a>
+          {#if page.url.pathname.endsWith(id)}
+            <strong>{viewId}</strong>
+          {:else}
+            <a href="/{id}">{viewId}</a>
+          {/if}
         </li>
       {/each}
     </ul>

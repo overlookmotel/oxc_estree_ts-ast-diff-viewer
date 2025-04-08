@@ -25,7 +25,7 @@
 
   .viewer {
     display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: 15% repeat(3, minmax(0, 1fr));
     gap: 0.5rem;
     font-size: 0.6rem;
   }
