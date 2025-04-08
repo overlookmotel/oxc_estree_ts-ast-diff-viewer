@@ -12,9 +12,7 @@
   let conformanceIndex = $state(data.conformanceIndex);
 
   let category = $state("compiler");
-  let activeIndex = $derived(
-    category === "compiler" ? compilerIndex : conformanceIndex,
-  );
+  let activeIndex = $derived(category === "compiler" ? compilerIndex : conformanceIndex);
 
   /** @param {string} newCategory */
   const setCategory = (newCategory) => (category = newCategory);
@@ -32,6 +30,14 @@
     if (sortType === "removed") {
       compilerIndex = compilerIndex.toSorted((a, b) => a.removed - b.removed);
       conformanceIndex = conformanceIndex.toSorted((a, b) => a.removed - b.removed);
+    }
+    if (sortType === "diff") {
+      compilerIndex = compilerIndex.toSorted(
+        (a, b) => Math.abs(a.added - a.removed) - Math.abs(b.added - b.removed),
+      );
+      conformanceIndex = conformanceIndex.toSorted(
+        (a, b) => Math.abs(a.added - a.removed) - Math.abs(b.added - b.removed),
+      );
     }
   };
 </script>
@@ -52,6 +58,7 @@
         <button onclick={() => sortIndexes("id")}>Id</button>
         <button onclick={() => sortIndexes("added")}>Added</button>
         <button onclick={() => sortIndexes("removed")}>Removed</button>
+        <button onclick={() => sortIndexes("diff")}>Diff</button>
       </div>
     </fieldset>
 
