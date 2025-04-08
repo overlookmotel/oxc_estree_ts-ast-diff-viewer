@@ -6,6 +6,9 @@ import { diffLines } from "diff";
 import { parse } from "@typescript-eslint/parser";
 import { parseSync } from "../oxc/napi/parser/index.js";
 
+const INFINITY_PLACEHOLDER = "__INFINITY__INFINITY__INFINITY__";
+const BIGINT_PLACEHOLDER = "__BIGINT__";
+
 const stats = {};
 const glob = new Glob("**/*.ts");
 for (const cwd of [
@@ -131,32 +134,43 @@ function parseTheirs(code) {
   delete ast.tokens;
   delete ast.comments;
 
-  const json = JSON.stringify(
-    ast,
-    (_key, value) => {
-      if (typeof value !== "object" || value === null || !Object.hasOwn(value, "type"))
-        return value;
+  return JSON.stringify(ast, transformerTs, 2);
+}
 
-      // Remove `loc` field
-      if (Object.hasOwn(value, "loc")) value.loc = undefined;
+// Transformer for TS-ESLint AST.
+function transformerTs(_key, value) {
+  if (typeof value === "bigint") return `${BIGINT_PLACEHOLDER}${value}${BIGINT_PLACEHOLDER}`;
+  if (value === Infinity) return INFINITY_PLACEHOLDER;
 
-      // Convert `range` field to `start` + `end`
-      if (Object.hasOwn(value, "range")) {
-        value = {
-          type: value.type,
-          start: value.range[0],
-          end: value.range[1],
-          ...value,
-          range: undefined,
-        };
-      }
+  if (typeof value !== "object" || value === null || !Object.hasOwn(value, "type")) return value;
 
-      return sortObject(value);
-    },
-    2,
-  );
+  if (value.type === "Literal" && Object.hasOwn(value, "regex")) {
+    value.regex.flags = [...value.regex.flags].sort().join("");
+    value.value = null;
+  }
 
-  return json;
+  // Replace `undefined` with `null`
+  for (const key of Object.keys(value)) {
+    if (typeof value[key] === "undefined") {
+      value[key] = null;
+    }
+  }
+
+  // Remove `loc` field
+  if (Object.hasOwn(value, "loc")) value.loc = undefined;
+
+  // Convert `range` field to `start` + `end`
+  if (Object.hasOwn(value, "range")) {
+    value = {
+      type: value.type,
+      start: value.range[0],
+      end: value.range[1],
+      ...value,
+      range: undefined,
+    };
+  }
+
+  return sortObject(value);
 }
 
 function parseOurs(code) {
@@ -169,7 +183,20 @@ function parseOurs(code) {
   // TODO: For theirs, this is comment w/ `type: Shebang`
   delete ret.program.hashbang;
 
-  const json = JSON.stringify(sortObject(ret.program, { deep: true }), null, 2);
+  return JSON.stringify(ret.program, transformerOxc, 2);
+}
 
-  return json;
+// Transformer for Oxc AST.
+function transformerOxc(_key, value) {
+  if (typeof value === "bigint") return `${BIGINT_PLACEHOLDER}${value}${BIGINT_PLACEHOLDER}`;
+  if (value === Infinity) return INFINITY_PLACEHOLDER;
+
+  if (typeof value !== "object" || value === null || !Object.hasOwn(value, "type")) return value;
+
+  if (value.type === "Literal" && Object.hasOwn(value, "regex")) {
+    value.regex.flags = [...value.regex.flags].sort().join("");
+    value.value = null;
+  }
+
+  return sortObject(value);
 }
