@@ -9,7 +9,7 @@ Simple app for viewing AST differences between TS-ESLint and OXC.
 
 ## How to use
 
-1. Clone OXC repo next to this repo and prepare typescript fixtures by `just submodules`.
+1. Clone OXC repo next to this repo
 
 ```
 - oxc
@@ -22,14 +22,16 @@ Simple app for viewing AST differences between TS-ESLint and OXC.
   - ...
 ```
 
-2. Install Bun js runtime
-
-3. Setup and run app
+2. Prepare typescript fixtures by `just submodules`
+3. Run `pnpm run build` in `/napi/parser`
+4. Install Bun js runtime
+5. Setup and run app
 
 ```sh
 cd oxc_estree_ts-ast-diff-viewer
 
 # create or update index
+# This may take about 2-3 mins...
 bun ./bun-create-index.js
 
 # Run app
@@ -37,7 +39,7 @@ bun i
 bun run dev
 ```
 
-4. Open http://localhost:5173
+6. Open http://localhost:5173
 
 ## Notes
 
