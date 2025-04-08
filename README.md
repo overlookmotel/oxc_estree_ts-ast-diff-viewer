@@ -22,24 +22,32 @@ Simple app for viewing AST differences between TS-ESLint and OXC.
   - ...
 ```
 
-2. Prepare typescript fixtures by `just submodules`
-3. Run `pnpm run build` in `/napi/parser`
-4. Install Bun js runtime
-5. Setup and run app
+2. Prepare typescript fixtures by `just submodules` and `pnpm run build` in `/napi/parser`
+
+```sh
+cd oxc
+just submodules
+
+cd napi/parser
+pnpm run build
+```
+
+3. Install Bun js runtime for setup script
+4. Create index files and run app
 
 ```sh
 cd oxc_estree_ts-ast-diff-viewer
 
-# create or update index
+# create or update index in `./generated`
 # This may take about 2-3 mins...
 bun ./bun-create-index.js
 
-# Run app
+# Run app(You can use `npm` this time if you want)
 bun i
 bun run dev
 ```
 
-6. Open http://localhost:5173
+5. Open http://localhost:5173
 
 ## Notes
 
