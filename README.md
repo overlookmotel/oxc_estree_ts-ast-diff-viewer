@@ -1,9 +1,9 @@
 # oxc_estree_ts-ast-diff-viewer
 
-> Align JS-side AST with standard for TypeScript · Issue #9705 · oxc-project/oxc 
+> Align JS-side AST with standard for TypeScript · Issue #9705 · oxc-project/oxc
 > https://github.com/oxc-project/oxc/issues/9705
 
-Simple app for viewing AST differences between TS-ESLint and OXC.
+Simple app for browsing AST differences between TS-ESLint and OXC.
 
 ![](./ss.avif)
 
@@ -51,10 +51,8 @@ bun run dev
 
 ## Notes
 
-Some of the results in this app may not be identical to the ones on the `tasks/coverage`.
-
-- Not specified the exact options
-- Not done every tweaking for the ASTs
-- etc...
-
-Just use it for simple checking.
+- Some of the results in this app may not be identical to the ones on the `tasks/coverage`
+  - Not specified the exact options
+  - Not done every tweaking for the ASTs
+- A few test files are ignored for now
+  - See `bun-create-index.js`
