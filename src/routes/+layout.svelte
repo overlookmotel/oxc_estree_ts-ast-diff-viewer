@@ -80,7 +80,10 @@
     </ul>
   </nav>
 
-  <div class="main">{@render children()}</div>
+  <!-- XXX: Scroll top hack for in-page-scroll -->
+  {#key page.url.pathname}
+    <div class="main">{@render children()}</div>
+  {/key}
 </main>
 
 <style>
