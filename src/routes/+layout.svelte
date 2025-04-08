@@ -23,12 +23,12 @@
       conformanceIndex = conformanceIndex.toSorted((a, b) => a.id.localeCompare(b.id));
     }
     if (sortType === "added") {
-      compilerIndex = compilerIndex.toSorted((a, b) => b.added - a.added);
-      conformanceIndex = conformanceIndex.toSorted((a, b) => b.added - a.added);
+      compilerIndex = compilerIndex.toSorted((a, b) => a.added - b.added);
+      conformanceIndex = conformanceIndex.toSorted((a, b) => a.added - b.added);
     }
     if (sortType === "removed") {
-      compilerIndex = compilerIndex.toSorted((a, b) => b.removed - a.removed);
-      conformanceIndex = conformanceIndex.toSorted((a, b) => b.removed - a.removed);
+      compilerIndex = compilerIndex.toSorted((a, b) => a.removed - b.removed);
+      conformanceIndex = conformanceIndex.toSorted((a, b) => a.removed - b.removed);
     }
   };
 </script>
@@ -46,9 +46,9 @@
       </div>
       <div>
         <span>Order by:</span>
-        <button onclick={() => sortIndexes("id")}>Name ASC</button>
-        <button onclick={() => sortIndexes("added")}>Added DESC</button>
-        <button onclick={() => sortIndexes("removed")}>Removed DESC</button>
+        <button onclick={() => sortIndexes("id")}>Id</button>
+        <button onclick={() => sortIndexes("added")}>Added</button>
+        <button onclick={() => sortIndexes("removed")}>Removed</button>
       </div>
     </fieldset>
 
