@@ -77,7 +77,7 @@
           {#if page.url.pathname.endsWith(id)}
             <strong>{viewId}</strong>
           {:else}
-            <a href="/{id}" onmouseenter={(ev) => ev.currentTarget.click()}>{viewId}</a>
+            <a href="/{id}" onpointerenter={(ev) => ev.currentTarget.click()}>{viewId}</a>
           {/if}
         </li>
       {/each}
