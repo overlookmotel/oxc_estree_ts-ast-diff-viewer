@@ -1,45 +1,34 @@
 <script>
-  import { toViewId } from "$lib/utils.js";
   import { page } from "$app/state";
-  /** @typedef {import("./+layout.server.js").Index} Index */
+  import { toViewId } from "$lib/utils.js";
 
   /** @type {import('./$types').LayoutProps} */
   const { children, data } = $props();
 
-  /** @type {Index[]} */
-  let compilerIndex = $state(data.compilerIndex);
-  /** @type {Index[]} */
-  let conformanceIndex = $state(data.conformanceIndex);
-
   let category = $state("compiler");
-  let activeIndex = $derived(category === "compiler" ? compilerIndex : conformanceIndex);
-
   /** @param {string} newCategory */
   const setCategory = (newCategory) => (category = newCategory);
 
-  /** @param {string} sortType */
-  const sortIndexes = (sortType) => {
-    if (sortType === "id") {
-      compilerIndex = compilerIndex.toSorted((a, b) => a.id.localeCompare(b.id));
-      conformanceIndex = conformanceIndex.toSorted((a, b) => a.id.localeCompare(b.id));
-    }
-    if (sortType === "added") {
-      compilerIndex = compilerIndex.toSorted((a, b) => a.added - b.added);
-      conformanceIndex = conformanceIndex.toSorted((a, b) => a.added - b.added);
-    }
-    if (sortType === "removed") {
-      compilerIndex = compilerIndex.toSorted((a, b) => a.removed - b.removed);
-      conformanceIndex = conformanceIndex.toSorted((a, b) => a.removed - b.removed);
-    }
-    if (sortType === "diff") {
-      compilerIndex = compilerIndex.toSorted(
+  let sortType = $state("diff");
+  /** @param {string} newSortType */
+  const sortIndexes = (newSortType) => (sortType = newSortType);
+
+  /** @type {import("./+layout.server.js").Index[]} */
+  let activeIndex = $derived.by(() => {
+    if (category === "compiler") return data.compilerIndex;
+    if (category === "conformance") return data.conformanceIndex;
+    throw new Error(`Unknown category: ${category}`);
+  });
+  let activeSortedIndex = $derived.by(() => {
+    if (sortType === "id") return activeIndex.toSorted((a, b) => a.id.localeCompare(b.id));
+    if (sortType === "added") return activeIndex.toSorted((a, b) => a.added - b.added);
+    if (sortType === "removed") return activeIndex.toSorted((a, b) => a.removed - b.removed);
+    if (sortType === "diff")
+      return activeIndex.toSorted(
         (a, b) => Math.abs(a.added - a.removed) - Math.abs(b.added - b.removed),
       );
-      conformanceIndex = conformanceIndex.toSorted(
-        (a, b) => Math.abs(a.added - a.removed) - Math.abs(b.added - b.removed),
-      );
-    }
-  };
+    throw new Error(`Unknown sortType: ${sortType}`);
+  });
 </script>
 
 <svelte:head>
@@ -52,22 +41,23 @@
       <legend>Controls</legend>
       <div>
         <span>Category:</span>
-        <button onclick={() => setCategory("compiler")}>Compiler({compilerIndex.length})</button>
-        <button onclick={() => setCategory("conformance")}
-          >Conformance({conformanceIndex.length})</button
+        <button onclick={() => setCategory("compiler")} disabled={category === "compiler"}
+          >Compiler({data.compilerIndex.length})</button
+        >
+        <button onclick={() => setCategory("conformance")} disabled={category === "conformance"}
+          >Conformance({data.conformanceIndex.length})</button
         >
       </div>
       <div>
         <span>Order by:</span>
-        <button onclick={() => sortIndexes("id")}>Id</button>
-        <button onclick={() => sortIndexes("added")}>Added</button>
-        <button onclick={() => sortIndexes("removed")}>Removed</button>
-        <button onclick={() => sortIndexes("diff")}>Diff</button>
+        {#each ["id", "added", "removed", "diff"] as type}
+          <button onclick={() => sortIndexes(type)} disabled={sortType === type}>{type}</button>
+        {/each}
       </div>
     </fieldset>
 
     <ul data-sveltekit-preload-data="false">
-      {#each activeIndex as { id, added, removed }}
+      {#each activeSortedIndex as { id, added, removed }}
         {@const viewId = toViewId(id)}
         <li>
           <div class="diff">
