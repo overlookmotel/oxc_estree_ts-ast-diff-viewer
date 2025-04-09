@@ -147,9 +147,12 @@ function parseTheirs(code) {
 
     if (typeof value !== "object" || value === null || !Object.hasOwn(value, "type")) return value;
 
+    let deep = false;
+
     if (value.type === "Literal" && Object.hasOwn(value, "regex")) {
       value.regex.flags = [...value.regex.flags].sort().join("");
       value.value = null;
+      deep = true;
     }
 
     // Replace `undefined` with `null`
@@ -173,7 +176,7 @@ function parseTheirs(code) {
       };
     }
 
-    return sortObject(value);
+    return sortObject(value, { deep });
   }
 }
 
@@ -196,12 +199,15 @@ function parseOurs(code) {
 
     if (typeof value !== "object" || value === null || !Object.hasOwn(value, "type")) return value;
 
+    let deep = false;
+
     if (value.type === "Literal" && Object.hasOwn(value, "regex")) {
       value.regex.flags = [...value.regex.flags].sort().join("");
       value.value = null;
+      deep = true;
     }
 
-    return sortObject(value);
+    return sortObject(value, { deep });
   }
 }
 
