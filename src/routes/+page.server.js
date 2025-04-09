@@ -1,8 +1,10 @@
+export const ssr = false;
+
 import { readFile } from "node:fs/promises";
 
 /** @typedef {{ id: string, added: number, removed: number }} Index */
 
-/** @type {import('./$types').LayoutServerLoad<{
+/** @type {import('./$types').PageServerLoad<{
  *	compilerIndex: Index[],
  *	conformanceIndex: Index[]
  * }>} */
@@ -24,7 +26,8 @@ export async function load() {
   console.log("conformanceIndex", conformanceIndex.length);
 
   return {
-    compilerIndex,
+    // DEBUG
+    compilerIndex: compilerIndex.slice(0, 100),
     conformanceIndex,
   };
 }

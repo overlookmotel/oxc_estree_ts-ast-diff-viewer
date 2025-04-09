@@ -1,12 +1,11 @@
 import { error } from "@sveltejs/kit";
 import { readFile } from "node:fs/promises";
 
-/** @type {import('./$types').PageServerLoad} */
-export async function load({ params }) {
+/** @type {import('./$types').RequestHandler} */
+export const GET = async ({ params }) => {
   const { category, path } = params;
   const id = [category, path].join("/");
-
-  console.log("Loading data for ID:", id);
+  console.log("GET:", id);
 
   try {
     const [source, ours, theirs, diff] = await Promise.all(
@@ -15,14 +14,13 @@ export async function load({ params }) {
       ),
     );
 
-    return {
-      id,
+    return Response.json({
       source,
       ours,
       theirs,
       diff: JSON.parse(diff),
-    };
+    });
   } catch {
     error(404, "Not found");
   }
-}
+};
