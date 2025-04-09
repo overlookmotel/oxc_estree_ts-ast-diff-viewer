@@ -26,8 +26,7 @@ export async function load() {
   console.log("conformanceIndex", conformanceIndex.length);
 
   return {
-    // DEBUG
-    compilerIndex: compilerIndex.slice(0, 100),
+    compilerIndex,
     conformanceIndex,
   };
 }
