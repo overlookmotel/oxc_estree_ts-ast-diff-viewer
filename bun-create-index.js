@@ -1,13 +1,10 @@
 import { Glob } from "bun";
 import { mkdir, rm } from "node:fs/promises";
 import { resolve } from "node:path";
-import sortObject from "sort-keys";
 import { diffLines } from "diff";
+import sortObject from "sort-keys";
 import { parse } from "@typescript-eslint/parser";
 import { parseSync } from "../oxc/napi/parser/index.js";
-
-const INFINITY_PLACEHOLDER = "__INFINITY__INFINITY__INFINITY__";
-const BIGINT_PLACEHOLDER = "__BIGINT__";
 
 const stats = {};
 const glob = new Glob("**/*.ts");
@@ -87,6 +84,10 @@ for (const cwd of [
     console.log("Diffing", id);
     console.time();
 
+    // `diff` also exports `diffJson()` and it supports ordering and prettifying.
+    // But we don't use it since:
+    // - It is too slow
+    // - It is not possible to save formatted JSON
     const changes = diffLines(results.ours, results.theirs);
 
     const diff = [0, 0];
@@ -124,6 +125,9 @@ console.table(stats);
 
 // ---
 
+const INFINITY_PLACEHOLDER = "__INFINITY__INFINITY__INFINITY__";
+const BIGINT_PLACEHOLDER = "__BIGINT__";
+
 function parseTheirs(code) {
   const ast = parse(code, {
     sourceType: "module",
@@ -134,43 +138,43 @@ function parseTheirs(code) {
   delete ast.tokens;
   delete ast.comments;
 
-  return JSON.stringify(ast, transformerTs, 2);
-}
+  return ensureTrailingComma(JSON.stringify(ast, transformerTs, 2));
 
-// Transformer for TS-ESLint AST.
-function transformerTs(_key, value) {
-  if (typeof value === "bigint") return `${BIGINT_PLACEHOLDER}${value}${BIGINT_PLACEHOLDER}`;
-  if (value === Infinity) return INFINITY_PLACEHOLDER;
+  // Transformer for TS-ESLint AST.
+  function transformerTs(_key, value) {
+    if (typeof value === "bigint") return `${BIGINT_PLACEHOLDER}${value}${BIGINT_PLACEHOLDER}`;
+    if (value === Infinity) return INFINITY_PLACEHOLDER;
 
-  if (typeof value !== "object" || value === null || !Object.hasOwn(value, "type")) return value;
+    if (typeof value !== "object" || value === null || !Object.hasOwn(value, "type")) return value;
 
-  if (value.type === "Literal" && Object.hasOwn(value, "regex")) {
-    value.regex.flags = [...value.regex.flags].sort().join("");
-    value.value = null;
-  }
-
-  // Replace `undefined` with `null`
-  for (const key of Object.keys(value)) {
-    if (typeof value[key] === "undefined") {
-      value[key] = null;
+    if (value.type === "Literal" && Object.hasOwn(value, "regex")) {
+      value.regex.flags = [...value.regex.flags].sort().join("");
+      value.value = null;
     }
+
+    // Replace `undefined` with `null`
+    for (const key of Object.keys(value)) {
+      if (typeof value[key] === "undefined") {
+        value[key] = null;
+      }
+    }
+
+    // Remove `loc` field
+    if (Object.hasOwn(value, "loc")) value.loc = undefined;
+
+    // Convert `range` field to `start` + `end`
+    if (Object.hasOwn(value, "range")) {
+      value = {
+        type: value.type,
+        start: value.range[0],
+        end: value.range[1],
+        ...value,
+        range: undefined,
+      };
+    }
+
+    return sortObject(value);
   }
-
-  // Remove `loc` field
-  if (Object.hasOwn(value, "loc")) value.loc = undefined;
-
-  // Convert `range` field to `start` + `end`
-  if (Object.hasOwn(value, "range")) {
-    value = {
-      type: value.type,
-      start: value.range[0],
-      end: value.range[1],
-      ...value,
-      range: undefined,
-    };
-  }
-
-  return sortObject(value);
 }
 
 function parseOurs(code) {
@@ -183,20 +187,30 @@ function parseOurs(code) {
   // TODO: For theirs, this is comment w/ `type: Shebang`
   delete ret.program.hashbang;
 
-  return JSON.stringify(ret.program, transformerOxc, 2);
+  return ensureTrailingComma(JSON.stringify(ret.program, transformerOxc, 2));
+
+  // Transformer for Oxc AST.
+  function transformerOxc(_key, value) {
+    if (typeof value === "bigint") return `${BIGINT_PLACEHOLDER}${value}${BIGINT_PLACEHOLDER}`;
+    if (value === Infinity) return INFINITY_PLACEHOLDER;
+
+    if (typeof value !== "object" || value === null || !Object.hasOwn(value, "type")) return value;
+
+    if (value.type === "Literal" && Object.hasOwn(value, "regex")) {
+      value.regex.flags = [...value.regex.flags].sort().join("");
+      value.value = null;
+    }
+
+    return sortObject(value);
+  }
 }
 
-// Transformer for Oxc AST.
-function transformerOxc(_key, value) {
-  if (typeof value === "bigint") return `${BIGINT_PLACEHOLDER}${value}${BIGINT_PLACEHOLDER}`;
-  if (value === Infinity) return INFINITY_PLACEHOLDER;
-
-  if (typeof value !== "object" || value === null || !Object.hasOwn(value, "type")) return value;
-
-  if (value.type === "Literal" && Object.hasOwn(value, "regex")) {
-    value.regex.flags = [...value.regex.flags].sort().join("");
-    value.value = null;
-  }
-
-  return sortObject(value);
+// Naive, but very much faster than `json5.stringify()` and enough for us
+function ensureTrailingComma(json) {
+  return json
+    .split("\n")
+    .map((line) =>
+      line.endsWith(",") || line.endsWith("{") || line.endsWith("[") ? line : line + ",",
+    )
+    .join("\n");
 }

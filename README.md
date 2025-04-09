@@ -39,7 +39,7 @@ pnpm run build
 cd oxc_estree_ts-ast-diff-viewer
 
 # create or update index in `./generated`
-# This may take about 2-3 mins...
+# This may take about 20~30 sec...
 bun ./bun-create-index.js
 
 # Run app(You can use `npm` this time if you want)
@@ -51,8 +51,5 @@ bun run dev
 
 ## Notes
 
-- Some of the results in this app may not be identical to the ones on the `tasks/coverage`
-  - Not specified the exact options
-  - Not done every tweaking for the ASTs
 - A few test files are ignored for now
-  - See `bun-create-index.js`
+  - See `bun-create-index.js` and find `ignored` keyword
