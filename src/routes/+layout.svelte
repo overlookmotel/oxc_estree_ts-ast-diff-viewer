@@ -42,6 +42,10 @@
   };
 </script>
 
+<svelte:head>
+  <title>OXC ESTree-TS AST Diff Viewer</title>
+</svelte:head>
+
 <main>
   <nav>
     <fieldset class="controls">
@@ -73,7 +77,7 @@
           {#if page.url.pathname.endsWith(id)}
             <strong>{viewId}</strong>
           {:else}
-            <a href="/{id}">{viewId}</a>
+            <a href="/{id}" onmouseenter={(ev) => ev.currentTarget.click()}>{viewId}</a>
           {/if}
         </li>
       {/each}
