@@ -43,6 +43,7 @@
   pre,
   .diff {
     margin: 0;
+    padding: 0.25rem;
     position: relative;
     overflow-x: auto;
     background-color: #eee;

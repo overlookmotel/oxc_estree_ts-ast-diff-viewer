@@ -91,7 +91,7 @@
 
   main {
     display: grid;
-    grid-template-columns: 320px 1fr;
+    grid-template-columns: 280px 1fr;
     height: 100vh;
   }
 
