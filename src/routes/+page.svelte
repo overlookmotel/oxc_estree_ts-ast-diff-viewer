@@ -8,29 +8,39 @@
   /** @type {string | null} */
   let selectedId = $state(null);
 
-  let category = $state("compiler");
-  /** @param {string} newCategory */
-  const setCategory = (newCategory) => (category = newCategory);
-
-  let sortType = $state("diff");
-  /** @param {string} newSortType */
-  const sortIndexes = (newSortType) => (sortType = newSortType);
+  let controlsState = $state({
+    category: "compiler",
+    sortType: "diff",
+    filterRe: "",
+  });
 
   /** @type {import("./+page.server.js").Index[]} */
   let activeIndex = $derived.by(() => {
-    if (category === "compiler") return data.compilerIndex;
-    if (category === "conformance") return data.conformanceIndex;
-    throw new Error(`Unknown category: ${category}`);
+    if (controlsState.category === "compiler") return data.compilerIndex;
+    if (controlsState.category === "conformance") return data.conformanceIndex;
+    throw new Error(`[Unreachable] Uknown category: ${controlsState.category}`);
   });
-  let activeSortedIndex = $derived.by(() => {
-    if (sortType === "id") return activeIndex.toSorted((a, b) => a.id.localeCompare(b.id));
-    if (sortType === "added") return activeIndex.toSorted((a, b) => a.added - b.added);
-    if (sortType === "removed") return activeIndex.toSorted((a, b) => a.removed - b.removed);
-    if (sortType === "diff")
-      return activeIndex.toSorted(
+  let activeFilteredIndex = $derived.by(() => {
+    if (controlsState.filterRe === "") return activeIndex;
+    try {
+      const re = new RegExp(controlsState.filterRe, "vi");
+      return activeIndex.filter(({ id }) => re.test(id));
+    } catch {
+      return activeIndex;
+    }
+  });
+  let activeFilteredSortedIndex = $derived.by(() => {
+    if (controlsState.sortType === "id")
+      return activeFilteredIndex.toSorted((a, b) => a.id.localeCompare(b.id));
+    if (controlsState.sortType === "added")
+      return activeFilteredIndex.toSorted((a, b) => a.added - b.added);
+    if (controlsState.sortType === "removed")
+      return activeFilteredIndex.toSorted((a, b) => a.removed - b.removed);
+    if (controlsState.sortType === "diff")
+      return activeFilteredIndex.toSorted(
         (a, b) => Math.abs(a.added - a.removed) - Math.abs(b.added - b.removed),
       );
-    throw new Error(`Unknown sortType: ${sortType}`);
+    throw new Error(`[Unreachable] Unknown sortType: ${controlsState.sortType}`);
   });
 </script>
 
@@ -44,22 +54,48 @@
       <legend>Controls</legend>
       <div>
         <span>Category:</span>
-        <button onclick={() => setCategory("compiler")} disabled={category === "compiler"}
-          >Compiler({data.compilerIndex.length})</button
-        ><button onclick={() => setCategory("conformance")} disabled={category === "conformance"}
-          >Conformance({data.conformanceIndex.length})</button
-        >
+        <div>
+          {#each ["compiler", "conformance"] as category}
+            <label>
+              <input
+                type="radio"
+                bind:group={controlsState.category}
+                value={category}
+                name="category"
+              />
+              {category}
+            </label>
+          {/each}
+        </div>
       </div>
       <div>
-        <span>Order by:</span>
-        {#each ["id", "added", "removed", "diff"] as type}
-          <button onclick={() => sortIndexes(type)} disabled={sortType === type}>{type}</button>
-        {/each}
+        <span>Order:</span>
+        <div>
+          {#each ["id", "added", "removed", "diff"] as type}
+            <label>
+              <input
+                type="radio"
+                bind:group={controlsState.sortType}
+                value={type}
+                name="sortType"
+              />
+              {type}
+            </label>
+          {/each}
+        </div>
       </div>
+      <div>
+        <span>Filter:</span>
+        <div>
+          <input type="text" bind:value={controlsState.filterRe} />
+        </div>
+      </div>
+      <hr />
+      <p>Listing: {activeFilteredIndex.length}/{activeIndex.length}</p>
     </fieldset>
 
     <ul data-sveltekit-preload-data="false">
-      {#each activeSortedIndex as { id, added, removed }}
+      {#each activeFilteredSortedIndex as { id, added, removed }}
         {@const viewId = toViewId(id)}
         <li>
           <input type="radio" bind:group={selectedId} value={id} id={viewId} name="id" />
@@ -100,17 +136,42 @@
     height: inherit;
     display: grid;
     grid-template-rows: max-content 1fr;
+    align-content: start;
     gap: 0.5rem;
     padding: 0.5rem;
     font-size: 0.8rem;
   }
 
   .controls {
-    & button {
-      font-size: 0.6rem;
+    display: grid;
+    gap: 0.25rem;
+    font-size: 0.8rem;
+    margin: 0;
+    background-color: #fafafa;
+
+    > div {
+      display: grid;
+      grid-template-columns: 55px 1fr;
+      align-items: center;
     }
-    & button + button {
-      margin-inline-start: 0.25rem;
+
+    label {
+      display: inline-flex;
+      align-items: baseline;
+    }
+
+    label + label {
+      margin-left: 0.5rem;
+    }
+
+    hr {
+      width: 100%;
+      margin: 0;
+    }
+
+    p {
+      margin: 0;
+      text-align: center;
     }
   }
 
