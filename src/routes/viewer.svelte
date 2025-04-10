@@ -19,7 +19,7 @@
       <pre class="theirs" data-label="TS-ESLint">{theirs}</pre>
       <div class="diff" data-label="DIFF">
         {#each diff as { value, added, removed }}
-          <div class={added ? "-a" : removed ? "-r" : ""}>{value}</div>
+          <div class="line {added ? '-a' : removed ? '-r' : ''}">{value}</div>
         {/each}
       </div>
     </div>
@@ -79,11 +79,25 @@
   .diff {
     color: #999;
 
-    :global(.-a) {
-      color: var(--color-diff-added);
-    }
-    :global(.-r) {
-      color: var(--color-diff-removed);
+    .line {
+      position: relative;
+
+      &.-a {
+        color: var(--color-diff-added);
+      }
+      &.-r {
+        color: var(--color-diff-removed);
+      }
+
+      &.-a,
+      &.-r {
+        &::before {
+          position: absolute;
+          height: 100%;
+          content: "";
+          border-left: 0.75rem solid;
+        }
+      }
     }
   }
 </style>
