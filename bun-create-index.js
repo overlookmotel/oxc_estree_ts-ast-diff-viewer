@@ -4,7 +4,7 @@ import { resolve } from "node:path";
 import { diffLines } from "diff";
 import sortObject from "sort-keys";
 import { parse } from "@typescript-eslint/parser";
-import { parseSync } from "../oxc/napi/parser/index.js";
+import { parseSync } from "oxc-parser";
 
 const stats = {};
 const glob = new Glob("**/*.ts");
