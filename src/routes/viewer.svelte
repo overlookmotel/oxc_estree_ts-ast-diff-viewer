@@ -18,8 +18,18 @@
       <pre class="ours" data-label="OXC">{ours}</pre>
       <pre class="theirs" data-label="TS-ESLint">{theirs}</pre>
       <div class="diff" data-label="DIFF">
-        {#each diff as { value, added, removed }}
-          <div class="line {added ? '-a' : removed ? '-r' : ''}">{value}</div>
+        <details open>
+          <summary>Diff only</summary>
+          {#each diff as { value, added, removed }, idx}
+            {#if added || removed}
+              <div class="line {added ? '-a' : removed ? '-r' : ''}">
+                <a href="#d-{idx}">{value}</a>
+              </div>
+            {/if}
+          {/each}
+        </details>
+        {#each diff as { value, added, removed }, idx}
+          <div id="d-{idx}" class="line {added ? '-a' : removed ? '-r' : ''}">{value}</div>
         {/each}
       </div>
     </div>
@@ -81,6 +91,11 @@
 
     .line {
       position: relative;
+
+      a {
+        color: inherit;
+        text-decoration: none;
+      }
 
       &.-a {
         color: var(--color-diff-added);
