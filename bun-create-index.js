@@ -19,7 +19,6 @@ for (const cwd of [
 
   const time = performance.now();
   const counter = {
-    ignored: 0,
     theirsFailed: 0,
     oursFailed: 0,
     matched: 0,
@@ -27,28 +26,8 @@ for (const cwd of [
   };
   const index = [];
   for await (const absPath of glob.scan({ cwd, absolute: true })) {
-    // DEBUG
-    // if (100 < counter.created) break;
-
     const path = absPath.split(cwd).pop().slice(1).replace(/\//g, ".");
     const id = [category, path].join("/");
-
-    // DEBUG: These files are extremely slow(+1min~ for each) to diff...
-    if (
-      [
-        "compiler/manyConstExports.ts",
-        "compiler/largeControlFlowGraph.ts",
-        "compiler/conditionalTypeDiscriminatingLargeUnionRegularTypeFetchingSpeedReasonable.ts",
-        "compiler/resolvingClassDeclarationWhenInBaseTypeResolution.ts",
-        "compiler/unionSubtypeReductionErrors.ts",
-        "compiler/enumLiteralsSubtypeReduction.ts",
-        "compiler/complexRecursiveCollections.ts",
-        "compiler/underscoreTest1.ts",
-      ].includes(id)
-    ) {
-      counter.ignored++;
-      continue;
-    }
 
     const sourceText = await Bun.file(absPath).text();
 
@@ -58,7 +37,7 @@ for (const cwd of [
     };
 
     try {
-      results.theirs = parseTheirs(sourceText);
+      results.theirs = ensureTrailingComma(parseTheirs(sourceText));
     } catch {
       // There are some files that fail to parse
       // - Invalid syntax
@@ -69,7 +48,7 @@ for (const cwd of [
     }
 
     try {
-      results.ours = parseOurs(sourceText);
+      results.ours = ensureTrailingComma(parseOurs(sourceText));
     } catch {
       counter.oursFailed++;
       continue;
@@ -138,7 +117,7 @@ function parseTheirs(code) {
   delete ast.tokens;
   delete ast.comments;
 
-  return ensureTrailingComma(JSON.stringify(ast, transformerTs, 2));
+  return JSON.stringify(ast, transformerTs, 2);
 
   // Transformer for TS-ESLint AST.
   function transformerTs(_key, value) {
@@ -188,7 +167,7 @@ function parseOurs(code) {
   // TODO: For theirs, this is comment w/ `type: Shebang`
   delete ret.program.hashbang;
 
-  return ensureTrailingComma(JSON.stringify(ret.program, transformerOxc, 2));
+  return JSON.stringify(ret.program, transformerOxc, 2);
 
   // Transformer for Oxc AST.
   function transformerOxc(_key, value) {
