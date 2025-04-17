@@ -33,17 +33,19 @@ pnpm run build
 ```
 
 3. Install Bun js runtime for setup script
-4. Create index files and run app
+4. Create index files and run viewer
 
 ```sh
 cd oxc_estree_ts-ast-diff-viewer
+
+# Install deps(You can use `npm` instead if you want)
+bun i
 
 # create or update index in `./generated`
 # This may take about 20~30 sec...
 bun ./bun-create-index.js
 
-# Run app(You can use `npm` this time if you want)
-bun i
+# Run app(You can use `npm` instead if you want)
 bun run dev
 ```
 
