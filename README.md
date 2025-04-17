@@ -22,7 +22,7 @@ Simple app for browsing AST differences between TS-ESLint and OXC.
   - ...
 ```
 
-2. Prepare typescript fixtures by `just submodules` and `pnpm run build` in `/napi/parser`
+2. Prepare typescript fixtures and prebuild `oxc-parser`
 
 ```sh
 cd oxc
@@ -32,7 +32,7 @@ cd napi/parser
 pnpm run build
 ```
 
-3. Install Bun js runtime for setup script
+3. Install Bun js runtime for setup script and also viewer dependencies
 4. Create index files and run viewer
 
 ```sh
@@ -51,7 +51,3 @@ bun run dev
 
 5. Open http://localhost:5173
 
-## Notes
-
-- A few test files are ignored for now
-  - See `bun-create-index.js` and find `ignored` keyword
