@@ -159,9 +159,10 @@ function parseTheirs(code) {
   }
 }
 
-function parseOurs(code) {
+function parseOurs(code, experimentalRawTransfer = false) {
   const ret = parseSync("foo.ts", code, {
     preserveParens: false,
+    experimentalRawTransfer,
   });
 
   if (ret.errors.length !== 0) throw new Error("OXC failed to parse");
