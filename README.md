@@ -32,21 +32,23 @@ cd napi/parser
 pnpm run build
 ```
 
-3. Install Bun js runtime for setup script and also viewer dependencies
-4. Create index files and run viewer
+3. Install deps and create indexes
 
 ```sh
 cd oxc_estree_ts-ast-diff-viewer
 
-# Install deps(You can use `npm` instead if you want)
-bun i
+npm i
 
-# create or update index in `./generated`
+# create or update indexes in `./generated`
 # This may take about 20~30 sec...
-bun ./bun-create-index.js
+node ./create-index.js
+```
 
-# Run app(You can use `npm` instead if you want)
-bun run dev
+4. Run viewer
+
+```sh
+# Run app
+npm run dev
 ```
 
 5. Open http://localhost:5173

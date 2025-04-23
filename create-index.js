@@ -1,21 +1,21 @@
-import { Glob } from "bun";
-import { mkdir, rm } from "node:fs/promises";
-import { resolve } from "node:path";
+import { mkdir, rm, readFile, writeFile } from "node:fs/promises";
+import { resolve, join } from "node:path";
 import { diffLines } from "diff";
 import sortObject from "sort-keys";
 import { parse } from "@typescript-eslint/parser";
-import { parseSync } from "oxc-parser";
+import { parseSync } from "../oxc/napi/parser/index.js";
+import { glob } from "tinyglobby";
 
 const stats = {};
-const glob = new Glob("**/*.ts");
+
 for (const cwd of [
   resolve("../oxc/tasks/coverage/typescript/tests/cases/compiler"),
   resolve("../oxc/tasks/coverage/typescript/tests/cases/conformance"),
 ]) {
   const category = cwd.split("/").pop();
 
-  await rm(["./generated", category].join("/"), { recursive: true, force: true });
-  await mkdir(["./generated", category].join("/"), { recursive: true });
+  await rm(join("./generated", category), { recursive: true, force: true });
+  await mkdir(join("./generated", category), { recursive: true });
 
   const time = performance.now();
   const counter = {
@@ -25,11 +25,13 @@ for (const cwd of [
     created: 0,
   };
   const index = [];
-  for await (const absPath of glob.scan({ cwd, absolute: true })) {
+
+  const files = await glob("**/*.ts", { cwd, absolute: true });
+  for (const absPath of files) {
     const path = absPath.split(cwd).pop().slice(1).replace(/\//g, ".");
     const id = [category, path].join("/");
 
-    const sourceText = await Bun.file(absPath).text();
+    const sourceText = await readFile(absPath, "utf-8");
 
     const results = {
       theirs: null,
@@ -77,13 +79,13 @@ for (const cwd of [
 
     index.push([id, diff[0], diff[1]].join("|"));
 
-    const dest = ["./generated", id].join("/");
+    const dest = join("./generated", id);
     await mkdir(dest, { recursive: true });
     await Promise.all([
-      Bun.write(`${dest}/source.ts`, sourceText),
-      Bun.write(`${dest}/ours.json`, results.ours),
-      Bun.write(`${dest}/theirs.json`, results.theirs),
-      Bun.write(`${dest}/diff.json`, JSON.stringify(changes)),
+      writeFile(`${dest}/source.ts`, sourceText),
+      writeFile(`${dest}/ours.json`, results.ours),
+      writeFile(`${dest}/theirs.json`, results.theirs),
+      writeFile(`${dest}/diff.json`, JSON.stringify(changes)),
     ]);
 
     counter.created++;
@@ -91,7 +93,7 @@ for (const cwd of [
   }
 
   index.sort((a, b) => a.localeCompare(b));
-  await Bun.write(`./generated/${category}/index.txt`, index.join("\n"));
+  await writeFile(`./generated/${category}/index.txt`, index.join("\n"));
 
   stats[category] = {
     ...counter,
