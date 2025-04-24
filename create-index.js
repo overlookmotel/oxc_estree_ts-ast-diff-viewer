@@ -22,7 +22,7 @@ for (const cwd of [
     theirsFailed: 0,
     oursFailed: 0,
     matched: 0,
-    created: 0,
+    missmatched: 0,
   };
   const index = [];
 
@@ -33,18 +33,13 @@ for (const cwd of [
 
     const sourceText = await readFile(absPath, "utf-8");
 
-    const results = {
-      theirs: null,
-      ours: null,
-    };
+    const results = { theirs: null, ours: null };
 
     try {
       results.theirs = ensureTrailingComma(parseTheirs(sourceText));
     } catch {
-      // There are some files that fail to parse
-      // - Invalid syntax
-      // - etc...
-      // console.log(path);
+      // NOTE: Some files are invalid TS, so they cannot parse.
+      // We can safely skip them.
       counter.theirsFailed++;
       continue;
     }
@@ -52,9 +47,12 @@ for (const cwd of [
     try {
       results.ours = ensureTrailingComma(parseOurs(sourceText));
     } catch {
+      // NOTE: Unfortunately, they can parse some files which are invalid for us.
       counter.oursFailed++;
       continue;
     }
+
+    // Now we have 2 parsed AST strings, we need to diff them.
 
     // Match!
     if (results.ours === results.theirs) {
@@ -88,7 +86,7 @@ for (const cwd of [
       writeFile(`${dest}/diff.json`, JSON.stringify(changes)),
     ]);
 
-    counter.created++;
+    counter.missmatched++;
     console.timeEnd();
   }
 
