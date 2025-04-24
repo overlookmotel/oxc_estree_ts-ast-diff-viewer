@@ -26,7 +26,7 @@ for (const cwd of [
   };
   const index = [];
 
-  const files = await glob("**/*.ts", { cwd, absolute: true });
+  const files = await glob(["**/*.ts", "**/*.tsx"], { cwd, absolute: true });
   for (const absPath of files) {
     const path = absPath.split(cwd).pop().slice(1).replace(/\//g, ".");
     const id = [category, path].join("/");
