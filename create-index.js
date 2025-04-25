@@ -6,6 +6,15 @@ import { parse } from "@typescript-eslint/parser";
 import { parseSync } from "../oxc/napi/parser/index.js";
 import { glob } from "tinyglobby";
 
+const IGNORE_LIST = [
+  // https://github.com/typescript-eslint/typescript-eslint/issues/11064
+  "compiler/expressionWithJSDocTypeArguments.ts",
+  "compiler/parseInvalidNonNullableTypes.ts",
+  "compiler/parseInvalidNullableTypes.ts",
+  "conformance/types/tuple/restTupleElements1.ts",
+  "conformance/types/tuple/named/namedTupleMembersErrors.ts",
+];
+
 const stats = {};
 
 for (const cwd of [
@@ -19,6 +28,7 @@ for (const cwd of [
 
   const time = performance.now();
   const counter = {
+    ignored: 0,
     theirsFailed: 0,
     oursFailed: 0,
     matched: 0,
@@ -28,6 +38,11 @@ for (const cwd of [
 
   const files = await glob(["**/*.ts", "**/*.tsx"], { cwd, absolute: true });
   for (const absPath of files) {
+    if (IGNORE_LIST.some((p) => absPath.includes(p))) {
+      counter.ignored++;
+      continue;
+    }
+
     const path = absPath.split(cwd).pop().slice(1).replace(/\//g, ".");
     const id = [category, path].join("/");
 
@@ -160,6 +175,7 @@ function parseTheirs(code) {
 function parseOurs(code, experimentalRawTransfer = false) {
   const ret = parseSync("foo.ts", code, {
     preserveParens: false,
+    showSemanticErrors: true,
     experimentalRawTransfer,
   });
 

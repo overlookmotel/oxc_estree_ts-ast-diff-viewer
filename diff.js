@@ -5,7 +5,7 @@ import { parseSync } from "../oxc/napi/parser/index.js";
 // import { readFileSync } from "node:fs";
 // const CODE = readFileSync("../oxc/tasks/coverage/typescript/tests/cases/conformance/es6/templates/templateStringMultiline1_ES6.ts", "utf8");
 const CODE = `
-declare module "foo";
+({...({})} = {});
 `.trim();
 
 const [, , target] = process.argv;
@@ -87,6 +87,7 @@ function parseTheirs(code) {
 function parseOurs(code) {
   const ret = parseSync("foo.ts", code, {
     preserveParens: false,
+    showSemanticErrors: true,
     experimentalRawTransfer: true,
   });
 
