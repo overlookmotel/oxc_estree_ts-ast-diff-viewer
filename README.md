@@ -5,6 +5,9 @@
 
 Simple app for browsing AST differences between TS-ESLint and OXC.
 
+> [!WARNING]
+> Please note that this is a extremely simplified one intended to get a general sense of the overall gaps, and it does not perform things like test file splitting, strict option specification, etc.
+
 ![](./ss.avif)
 
 ## How to use
